@@ -154,7 +154,9 @@ City.prototype = {
 	      mins: Math.floor(Math.random()*59)
 	    };
 
-	    particle.agents = new Agent(i,start,finish,1); //members
+	    particle.idunico = p[i].idunico;
+	    particle.agents = members(5,i);//new Agent(i,start,finish,1); //members
+	    particle.inHouse = particle.agents.map(function(d) { return d.whereabout; }).reduce(function sum(a,b) { return a + b; }, 0 );
 
 	    G.vertices.push(particle);
 	    var color = new THREE.Color().setRGB(1,1,1);
@@ -175,27 +177,36 @@ City.prototype = {
 	  var colors = this.particles.colors;
 
 	  particles.forEach(function(a,i) {
-	    a.agents.routine(hr,mins);
+	    a.agents.forEach(function(m) { m.routine(hr,mins); });
+	    var isIn = a.agents.map(function(m) { return m.whereabout; })
+	      .reduce(function sum(a,b) { return a + b; }, 0);
+	    var w = a.agents[0].whereabout;
+	    a.agents[0].activity(w);
 
-	    var w = a.agents.whereabout;
-	    a.agents.activity(w);
-
-	    if(a.agents.whereabout === 1) colors[i].setRGB(1,1,1);
-	    if(a.agents.whereabout === 0) colors[i].setRGB(0,0,0);
-	    if(a.agents.consuming > 500*1 ) colors[i].setRGB(1,0.2,0);
+	    if(isIn > 0) colors[i].setRGB(1,1,1);
+	    if(isIn == 0) colors[i].setRGB(0,0,0);
+	    if(a.agents[0].consuming > 500*1 ) colors[i].setRGB(1,0.2,0);
 	  });
 
+	},
+
+	receive: function(p) {
+	  var particles = this.particles.vertices;
+	  var colors = this.particles.colors;
+	  this.particles.vertices[p.n].inHouse = p.d;
+	  if(this.particles.vertices[p.n].inHouse == 0) this.particles.colors[p.n].setRGB(0,0,0);
+//	  console.log("!") ; //
 	}
 
 };
 
 
-Time.prototype.timeKeep = function() {
+Time.prototype.timeKeep = function(scale) {
   this.t1 = new Date().getTime();
   this.num = this.t1 - this.t0;
 
-  if(this.mum<100) this.a += this.num;
-  if(this.a>=1) this.a=0; this.minutes++;
+  if(this.num<100) this.a += this.num;
+  if(this.a>=scale) { this.a=0; this.minutes++; }
   if(this.minutes==60) { this.minutes = 0; this.hr++; };
   if(this.hr==25) { this.hr=1 };
   this.t0 = this.t1;

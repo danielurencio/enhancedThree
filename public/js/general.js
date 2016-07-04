@@ -1,9 +1,9 @@
 function run() {
+
     var canvas = document.getElementById("canvas");
     canvas.width = window.innerWidth;
     canvas.height = window.innerHeight;
     var ctx = canvas.getContext("2d");
-
 
   queue()
     .defer(d3.json, "../../m_t.json")
@@ -20,28 +20,25 @@ function run() {
 
     var t0, t1;
     var time = new Time(t0,t1);
-    var hour = new Display(ctx,canvas);
-    var worker = new Worker("public/js/worker.js");
+    var socket = io.connect();
+
 
     function render() {
       requestAnimationFrame( render, canvas );
       renderer.render( scene, camera );
-      var t = time.timeKeep();
-
+      var T = 100;
+      var t = time.timeKeep(T);
+      socket.emit("time", t);
       var hour = new Display(ctx,canvas);
       hour.text(t.t,ctx);
-
-      sanpedro.dynamics(t);
-      worker.postMessage(t);
-
-      worker.onmessage = function(e) {
-//	console.log(e.data.r);
-      };
-
+      socket.on("agents", function(b) {
+	sanpedro.receive(b);
+      });
 
     };
 
     render();
+
   }
 
 };
